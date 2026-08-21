@@ -1,0 +1,44 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.vscode/
+.idea/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# LASP
+all.arc
+best.arc
+input.arc
+lasp.out
+lasp.log
+*.arc.bak
+
+# Slurm
+slurm-*.out
+*.o
+*.e
+
+# Temporary
+tmp/
+temp/
+output/
+
+# Large data
+*.xyz
+*.cif
+*.traj
