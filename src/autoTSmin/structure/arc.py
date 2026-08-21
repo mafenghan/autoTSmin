@@ -1,11 +1,13 @@
 from pathlib import Path
+from importlib_metadata import files
 import pandas as pd
 import re
 from .geometry import distance_matrix_pbc
 
 class arcread():
     def __init__(self,filelist,sort = False):
-        PT = pd.read_csv('PeriodicTable.csv', index_col=0)
+        PT_PATH = files("autoTSmin.structure").joinpath("PeriodicTable.csv")
+        PT = pd.read_csv(PT_PATH, index_col=0)
         self.arc = []
         for i in filelist:
             if 'CORE' in i or 'MOL' in i:
