@@ -88,10 +88,6 @@ class LASPRunner:
             f"[LASP] Waiting for job {self.job_id} ..."
         )
         while self.is_running():
-
-            print(
-                f"[LASP] Job {self.job_id} is running..."
-            )
             time.sleep(interval)
         print(
             f"[LASP] Job {self.job_id} finished."

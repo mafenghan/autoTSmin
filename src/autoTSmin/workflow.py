@@ -2,7 +2,7 @@ from pathlib import Path
 from .config import AutoTSminConfig
 from .lasp.input import LASPInput
 from .lasp.runner import LASPRunner
-from .structure.arc import get_lowest_energy_structure, check_bond_relation, write_arc
+from .structure.arc import get_lowest_energy_structure, get_highest_energy_structure, check_bond_relation, write_arc
 from .utils.filesystem import copy_file, cat_file
 
 class AutoTSmin:
@@ -103,14 +103,18 @@ class AutoTSmin:
         self.prepare_desw(self.config.is_file, self.config.fs_file)
         self.run_lasp(self.config.waiting_time)
         if not self.runner.check_ts_result():
-            print("[LASP] DESW failed. Check the lasp.out for details.")
-            return False
+            print("[LASP] DESW failed.")
+            with open(self.work_dir / "SSWPath.arc") as f:  lines = f.readlines()
+            if len(lines) > 3:
+                best_structure = get_highest_energy_structure(self.work_dir / "SSWPath.arc")
+                write_arc(best_structure.arc, best_structure.abc, self.config.ts_file, sort=False)               
+                return 'string success'
+            else:
+                return 'failed'
         copy_file(self.work_dir / "TSstr.arc", self.config.ts_file)
-        return True
+        return 'desw success'
 
     def run_tsmin(self, run_type: int = 5):
-        if not self.run_desw():
-            return False
         print(f"\n========== Run TS SSW search ==========")
         self.prepare_ts_ssw_search(self.config.ts_file, run_type)
         self.run_lasp(self.config.waiting_time)
@@ -153,11 +157,21 @@ class AutoTSmin:
                 continue
             print("\nFS structure found!")
             # TS search
+            ts_status = self.run_desw()
+            if ts_status == 'desw success':
+                print(f'\nDESW success! Please check the IS/TS/FS structure in {self.config.is_file}/{self.config.ts_file}/{self.config.fs_file}.')
+                return True
+            elif ts_status == 'failed':
+                print(f"\nDESW failed. Restarting search...")
+                continue
+            elif ts_status == 'string success':
+                print(f'\nString success. Next optimize TS guess.')
+            # TSmin
             ts_status = self.run_tsmin(run_type=run_type)
             if not ts_status:
                 print("\nNo TSmin structure found. Restarting search...")
                 continue
-            print("\nTSmin Finnished!")
+            print("\nTSmin Finished!")
             # TSmin 外推优化产生IS结构和FS结构
             is_status = self.run_ts_extrapolation("is", run_type=run_type)
             fs_status = self.run_ts_extrapolation("fs", run_type=run_type)
@@ -172,7 +186,7 @@ class AutoTSmin:
                 continue
             print("\nNew bonding relation found!")
             ts_status = self.run_desw()
-            if not ts_status:
+            if ts_status != 'desw success':
                 print("\nDESW failed. Restarting search...")
                 continue
             print(f"\nDESW success! Please check the IS/TS/FS structure in {self.config.is_file}/{self.config.ts_file}/{self.config.fs_file}.")

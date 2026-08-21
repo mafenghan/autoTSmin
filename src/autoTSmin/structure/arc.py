@@ -78,6 +78,15 @@ def get_lowest_energy_structure(all_arc):
     min_index = enlist.index(min(enlist))
     return arcread(arclist[min_index])
 
+def get_highest_energy_structure(all_arc):
+    arclist = split_arc(all_arc)
+    enlist = []
+    for i in arclist:
+        a = arcread(i)
+        enlist.append(a.en)
+    max_index = enlist.index(max(enlist))
+    return arcread(arclist[max_index])
+
 def check_bond_relation(is_file, fs_file, atom_i, atom_j):
     _is = read_arc(is_file)
     _fs = read_arc(fs_file)
