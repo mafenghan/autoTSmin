@@ -104,7 +104,6 @@ class LASPRunner:
         """
         self.submit()
         self.wait(interval=interval)
-        return self.check_result()
 
     def check_result(self):
         """

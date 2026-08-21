@@ -60,7 +60,7 @@ class AutoTSmin:
         if is_or_fs == "is":
             self.lasp_input.set_bond_by_atom(
                 self.config.atom_i, self.config.atom_j,
-                1.6, self.config.bond_strength
+                2.1, self.config.bond_strength
             )
         elif is_or_fs == "fs":
             self.lasp_input.set_bond_by_atom(
@@ -80,6 +80,7 @@ class AutoTSmin:
         if not self.runner.check_result():
             print("[LASP] FS Search failed. No new bonding relation found. Check the lasp.out for details.")
             return False
+        print("\n========== start optimization ==========")
         self.prepare_optimization(run_type)
         self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
@@ -99,9 +100,9 @@ class AutoTSmin:
         return True
 
     def run_tsmin(self, run_type: int = 5):
-        print(f"\n========== Run DESW TS search ==========")
         if not self.run_desw():
             return False
+        print(f"\n========== Run TS SSW search ==========")
         self.prepare_ts_ssw_search(self.config.ts_file, run_type)
         self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
@@ -130,6 +131,7 @@ class AutoTSmin:
         return True
 
     def run(self, run_type: int = 5):
+        print("========== Start TSmin workflow ==================\n")
         # find FS structure
         for cycle in range(1, self.config.max_cycles + 1):
             self.cycle = cycle
