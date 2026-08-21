@@ -157,13 +157,13 @@ class LASPInput:
         # 通常放到文件最后
         if self.lines and not self.lines[-1].endswith("\n"):
             self.lines[-1] += "\n"
-        self.lines.append("\n")
+        if self.lines[-1] != '\n':
+            self.lines.append("\n")
         self.lines.extend(new_block)
 
     def set_fixatom(
         self,
-        atom_i,
-        atom_j,
+        atoms,
     ):
         """
         添加或修改：
@@ -174,15 +174,8 @@ class LASPInput:
         %endblock fixatom
         例如：
         """
-        atom_i = int(atom_i)
-        atom_j = int(atom_j)
-        new_block = [
-            "%block fixatom\n",
-            f"1 1 xyz\n",
-            f"{atom_i} {atom_i} xyz\n",
-            f"{atom_j} {atom_j} xyz\n",
-            "%endblock fixatom\n",
-        ]
+        atom_block = [f"{int(i)} {int(i)} xyz\n" for i in atoms]
+        new_block = ["%block fixatom\n"] + atom_block + ["%endblock fixatom\n"]
         start = None
         end = None
         # 查找已有 fixatom 模块
@@ -207,7 +200,8 @@ class LASPInput:
         # 通常放到文件最后
         if self.lines and not self.lines[-1].endswith("\n"):
             self.lines[-1] += "\n"
-        self.lines.append("\n")
+        if self.lines[-1] != '\n':
+            self.lines.append("\n")
         self.lines.extend(new_block)
 
     def remove_bond_by_atom(self):
@@ -226,6 +220,31 @@ class LASPInput:
                 elif (
                     start is not None
                     and line.strip().lower() == "%endblock bond_by_atom"
+                ):
+                    end = i
+                    break
+            # 没找到
+            if start is None or end is None:
+                return
+            # 删除整个 block
+            del self.lines[start:end + 1]
+
+    def remove_fixatom(self):
+        """
+        删除整个：
+        %block bond_fixatom
+        ...
+        %endblock bond_fixatom
+        """
+        while True:
+            start = None
+            end = None
+            for i, line in enumerate(self.lines):
+                if line.strip().lower() == "%block bond_fixatom":
+                    start = i
+                elif (
+                    start is not None
+                    and line.strip().lower() == "%endblock bond_fixatom"
                 ):
                     end = i
                     break

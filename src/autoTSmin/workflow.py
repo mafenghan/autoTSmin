@@ -18,6 +18,8 @@ class AutoTSmin:
 
     def prepare_fs_ssw_search(self, file: Path = None, run_type: int = 5):
         copy_file(file, self.work_dir / "input.arc")
+        self.lasp_input.remove_fixatom()
+        self.lasp_input.set_fixatom([1])
         self.lasp_input.add_bond_potential()
         self.lasp_input.set_run_type(run_type)
         self.lasp_input.set_bond_by_atom(
@@ -30,6 +32,8 @@ class AutoTSmin:
     def prepare_optimization(self, run_type: int = 5):
         best_structure = get_lowest_energy_structure(self.config.all_arc)
         write_arc(best_structure.arc, best_structure.abc, self.work_dir / "input.arc", sort=False)
+        self.lasp_input.remove_fixatom()
+        self.lasp_input.set_fixatom([1])
         self.lasp_input.remove_bond_potential()
         self.lasp_input.remove_bond_by_atom()
         self.lasp_input.set_ssw_steps(1)
@@ -39,6 +43,8 @@ class AutoTSmin:
 
     def prepare_desw(self, file1: Path = None, file2: Path = None):
         cat_file(file1, file2, self.work_dir / "uncm.arc")
+        self.lasp_input.remove_fixatom()
+        self.lasp_input.set_fixatom([1])
         self.lasp_input.set_run_type(2)
         self.lasp_input.set_ssw_steps(1)
         self.lasp_input.set_sswoutput(True)
@@ -48,11 +54,14 @@ class AutoTSmin:
         copy_file(file, self.work_dir / "input.arc")
         self.lasp_input.set_run_type(run_type)
         self.lasp_input.set_ssw_steps(self.config.ts_search_ssw_steps)
-        self.lasp_input.set_fixatom(self.config.atom_i, self.config.atom_j)
+        self.lasp_input.remove_fixatom()
+        self.lasp_input.set_fixatom([1,self.config.atom_i, self.config.atom_j])
         self.lasp_input.save()
 
     def prepare_ts_extrapolation_optimization(self, file: Path = None, is_or_fs: str = 'is', run_type: int = 5):
         copy_file(file, self.work_dir / "input.arc")
+        self.lasp_input.remove_fixatom()
+        self.lasp_input.set_fixatom([1])
         self.lasp_input.set_run_type(run_type)
         self.lasp_input.set_ssw_steps(1)
         self.lasp_input.set_sswoutput(False)
@@ -74,13 +83,13 @@ class AutoTSmin:
         return is_bonded
 
     def run_find_fs(self, run_type: int = 5):
-        print(f"\n========== Cycle {self.cycle} ==========")
+        print("\n========== RUN FS ssw search ==========")
         self.prepare_fs_ssw_search(self.config.is_file, run_type)
         self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
             print("[LASP] FS Search failed. No new bonding relation found. Check the lasp.out for details.")
             return False
-        print("\n========== start optimization ==========")
+        print("\n========== RUN FS optimization ==========")
         self.prepare_optimization(run_type)
         self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
@@ -113,12 +122,13 @@ class AutoTSmin:
         return True
 
     def run_ts_extrapolation(self, is_or_fs: str, run_type: int = 5):
-        print(f"\n========== Run TSmin extrapolation optimization ({is_or_fs}) ==========")
+        print(f"\n========== Run TS extrapolation to {is_or_fs} ==========")
         self.prepare_ts_extrapolation_optimization(self.config.ts_file, is_or_fs, run_type)
         self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
             print("[LASP] TSmin Extrapolation Optimization failed. Check the lasp.out for details.")
             return False
+        print(f"\n========== Run {is_or_fs} optimization ==========")
         self.prepare_optimization(run_type)
         self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
@@ -131,10 +141,11 @@ class AutoTSmin:
         return True
 
     def run(self, run_type: int = 5):
-        print("========== Start TSmin workflow ==================\n")
+        print("========== Start TSmin workflow ==================")
         # find FS structure
         for cycle in range(1, self.config.max_cycles + 1):
             self.cycle = cycle
+            print(f"\n========== Cycle {self.cycle} ==========")
             # FS search
             fs_status = self.run_find_fs(run_type=run_type)
             if not fs_status:

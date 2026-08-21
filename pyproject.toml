@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autoTSmin"
-version = "0.1.4"
+version = "0.1.5"
 description = "Automatic transition-state and final-state searching based on LASP"
 readme = "README.md"
 requires-python = ">=3.8"
