@@ -72,7 +72,7 @@ cd autoTSmin
 pip install -e .
 
 
-## 使用
+## Usage
 
 ```python
 from pathlib import Path
