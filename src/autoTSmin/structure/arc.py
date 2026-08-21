@@ -2,7 +2,7 @@ from pathlib import Path
 from importlib_metadata import files
 import pandas as pd
 import re
-from .geometry import distance_matrix_pbc
+from .geometry import distance_matrix_pbc, abc2latt
 
 class arcread():
     def __init__(self,filelist,sort = False):
@@ -81,8 +81,8 @@ def get_lowest_energy_structure(all_arc):
 def check_bond_relation(is_file, fs_file, atom_i, atom_j):
     _is = read_arc(is_file)
     _fs = read_arc(fs_file)
-    is_distances = distance_matrix_pbc(_is.arc.loc[atom_i:atom_i,:], _is.arc.loc[atom_j:atom_j,:], abc=_is.abc)
-    fs_distances = distance_matrix_pbc(_fs.arc.loc[atom_i:atom_i,:], _fs.arc.loc[atom_j:atom_j,:], abc=_fs.abc)
+    is_distances = distance_matrix_pbc(_is.arc.loc[atom_i:atom_i,:], _is.arc.loc[atom_j:atom_j,:], lattice=abc2latt(_is.abc))
+    fs_distances = distance_matrix_pbc(_fs.arc.loc[atom_i:atom_i,:], _fs.arc.loc[atom_j:atom_j,:], lattice=abc2latt(_fs.abc))
     is_dist = is_distances[0,0]
     fs_dist = fs_distances[0,0]
     if is_dist < 1.5 and fs_dist > 1.5:
