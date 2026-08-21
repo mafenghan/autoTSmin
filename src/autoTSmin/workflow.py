@@ -16,9 +16,10 @@ class AutoTSmin:
     def run_lasp(self):
         self.runner.run()
 
-    def prepare_fs_ssw_search(self, file: Path = None):
+    def prepare_fs_ssw_search(self, file: Path = None, run_type: int = 5):
         copy_file(file, self.work_dir / "input.arc")
         self.lasp_input.add_bond_potential()
+        self.lasp_input.set_run_type(run_type)
         self.lasp_input.set_bond_by_atom(
             self.config.atom_i, self.config.atom_j,
             self.config.bond_length, self.config.bond_strength
@@ -26,12 +27,13 @@ class AutoTSmin:
         self.lasp_input.set_ssw_steps(self.config.fs_search_ssw_steps)
         self.lasp_input.save()
 
-    def prepare_optimization(self):
+    def prepare_optimization(self, run_type: int = 5):
         best_structure = get_lowest_energy_structure(self.config.all_arc)
         write_arc(best_structure.arc, best_structure.abc, self.work_dir / "input.arc", sort=False)
         self.lasp_input.remove_bond_potential()
         self.lasp_input.remove_bond_by_atom()
         self.lasp_input.set_ssw_steps(1)
+        self.lasp_input.set_run_type(run_type)
         self.lasp_input.set_sswoutput(False)
         self.lasp_input.save()
 
@@ -42,16 +44,16 @@ class AutoTSmin:
         self.lasp_input.set_sswoutput(True)
         self.lasp_input.save()
 
-    def prepare_ts_ssw_search(self, file: Path = None):
+    def prepare_ts_ssw_search(self, file: Path = None, run_type: int = 5):
         copy_file(file, self.work_dir / "input.arc")
-        self.lasp_input.set_run_type(5)
+        self.lasp_input.set_run_type(run_type)
         self.lasp_input.set_ssw_steps(self.config.ts_search_ssw_steps)
         self.lasp_input.set_fixatom(self.config.atom_i, self.config.atom_j)
         self.lasp_input.save()
 
-    def prepare_ts_extrapolation_optimization(self, file: Path = None, is_or_fs: str = 'is'):
+    def prepare_ts_extrapolation_optimization(self, file: Path = None, is_or_fs: str = 'is', run_type: int = 5):
         copy_file(file, self.work_dir / "input.arc")
-        self.lasp_input.set_run_type(5)
+        self.lasp_input.set_run_type(run_type)
         self.lasp_input.set_ssw_steps(1)
         self.lasp_input.set_sswoutput(False)
         self.lasp_input.add_bond_potential()
@@ -71,14 +73,14 @@ class AutoTSmin:
         is_bonded, _ = check_bond_relation(file1, file2, self.config.atom_i, self.config.atom_j)
         return is_bonded
 
-    def run_find_fs(self):
+    def run_find_fs(self, run_type: int = 5):
         print(f"\n========== Cycle {self.cycle} ==========")
-        self.prepare_fs_ssw_search(self.config.is_file)
+        self.prepare_fs_ssw_search(self.config.is_file, run_type)
         self.run_lasp()
         if not self.runner.check_result():
             print("[LASP] FS Search failed. Check the lasp.out for details.")
             return False
-        self.prepare_optimization()
+        self.prepare_optimization(run_type)
         self.run_lasp()
         if not self.runner.check_result():
             print("[LASP] FS Structure Optimization failed. Check the lasp.out for details.")
@@ -96,11 +98,11 @@ class AutoTSmin:
         copy_file(self.work_dir / "TSstr.arc", self.config.ts_file)
         return True
 
-    def run_tsmin(self):
+    def run_tsmin(self, run_type: int = 5):
         print(f"\n========== Run DESW TS search ==========")
         if not self.run_desw():
             return False
-        self.prepare_ts_ssw_search(self.config.ts_file)
+        self.prepare_ts_ssw_search(self.config.ts_file, run_type)
         self.run_lasp()
         if not self.runner.check_result():
             print("[LASP] TS Structure SSW search failed. Check the lasp.out for details.")
@@ -109,14 +111,14 @@ class AutoTSmin:
         write_arc(best_structure.arc, best_structure.abc, self.config.ts_file, sort=False)
         return True
 
-    def run_ts_extrapolation(self, is_or_fs: str):
+    def run_ts_extrapolation(self, is_or_fs: str, run_type: int = 5):
         print(f"\n========== Run TSmin extrapolation optimization ({is_or_fs}) ==========")
-        self.prepare_ts_extrapolation_optimization(self.config.ts_file, is_or_fs)
+        self.prepare_ts_extrapolation_optimization(self.config.ts_file, is_or_fs, run_type)
         self.run_lasp()
         if not self.runner.check_result():
             print("[LASP] TSmin Extrapolation Optimization failed. Check the lasp.out for details.")
             return False
-        self.prepare_optimization()
+        self.prepare_optimization(run_type)
         self.run_lasp()
         if not self.runner.check_result():
             print("[LASP] TSmin Extrapolation Optimization failed. Check the lasp.out for details.")
@@ -127,25 +129,25 @@ class AutoTSmin:
             copy_file(self.work_dir / "all.arc", self.config.fs_file)
         return True
 
-    def run(self):
+    def run(self, run_type: int = 5):
         # find FS structure
         for cycle in range(1, self.config.max_cycles + 1):
             self.cycle = cycle
             # FS search
-            fs_status = self.run_find_fs()
+            fs_status = self.run_find_fs(run_type=run_type)
             if not fs_status:
                 print("\nNo FS structure found. Restarting search...")
                 continue
             print("\nFS structure found!")
             # TS search
-            ts_status = self.run_tsmin()
+            ts_status = self.run_tsmin(run_type=run_type)
             if not ts_status:
                 print("\nNo TSmin structure found. Restarting search...")
                 continue
             print("\nTSmin Finnished!")
             # TSmin 外推优化产生IS结构和FS结构
-            is_status = self.run_ts_extrapolation("is")
-            fs_status = self.run_ts_extrapolation("fs")
+            is_status = self.run_ts_extrapolation("is", run_type=run_type)
+            fs_status = self.run_ts_extrapolation("fs", run_type=run_type)
             if not is_status or not fs_status:                
                 print("\nTSmin extrapolation optimization failed. Restarting search...")
                 continue
