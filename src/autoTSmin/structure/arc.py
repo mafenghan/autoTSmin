@@ -6,7 +6,7 @@ from .geometry import distance_matrix_pbc
 
 class arcread():
     def __init__(self,filelist,sort = False):
-        PT_PATH = files("autoTSmin.structure").joinpath("PeriodicTable.csv")
+        PT_PATH = Path(__file__).parent / "PeriodicTable.csv"
         PT = pd.read_csv(PT_PATH, index_col=0)
         self.arc = []
         for i in filelist:
