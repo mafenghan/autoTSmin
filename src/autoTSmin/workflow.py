@@ -13,8 +13,8 @@ class AutoTSmin:
         self.lasp_input = LASPInput(config.lasp_input)
         self.cycle = 0
 
-    def run_lasp(self):
-        self.runner.run()
+    def run_lasp(self, waiting_time: int = 10):
+        self.runner.run(interval = waiting_time)
 
     def prepare_fs_ssw_search(self, file: Path = None, run_type: int = 5):
         copy_file(file, self.work_dir / "input.arc")
@@ -70,18 +70,18 @@ class AutoTSmin:
         self.lasp_input.save()
 
     def check_final_structure(self, file1: Path = None, file2: Path = None):
-        is_bonded, _ = check_bond_relation(file1, file2, self.config.atom_i, self.config.atom_j)
+        is_bonded, _ = check_bond_relation(file1, file2, self.config.atom_i - 1 , self.config.atom_j - 1)
         return is_bonded
 
     def run_find_fs(self, run_type: int = 5):
         print(f"\n========== Cycle {self.cycle} ==========")
         self.prepare_fs_ssw_search(self.config.is_file, run_type)
-        self.run_lasp()
+        self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
-            print("[LASP] FS Search failed. Check the lasp.out for details.")
+            print("[LASP] FS Search failed. No new bonding relation found. Check the lasp.out for details.")
             return False
         self.prepare_optimization(run_type)
-        self.run_lasp()
+        self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
             print("[LASP] FS Structure Optimization failed. Check the lasp.out for details.")
             return False
@@ -91,7 +91,7 @@ class AutoTSmin:
     def run_desw(self):
         print(f"\n========== Run DESW ==========")
         self.prepare_desw(self.config.is_file, self.config.fs_file)
-        self.run_lasp()
+        self.run_lasp(self.config.waiting_time)
         if not self.runner.check_ts_result():
             print("[LASP] DESW failed. Check the lasp.out for details.")
             return False
@@ -103,7 +103,7 @@ class AutoTSmin:
         if not self.run_desw():
             return False
         self.prepare_ts_ssw_search(self.config.ts_file, run_type)
-        self.run_lasp()
+        self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
             print("[LASP] TS Structure SSW search failed. Check the lasp.out for details.")
             return False
@@ -114,12 +114,12 @@ class AutoTSmin:
     def run_ts_extrapolation(self, is_or_fs: str, run_type: int = 5):
         print(f"\n========== Run TSmin extrapolation optimization ({is_or_fs}) ==========")
         self.prepare_ts_extrapolation_optimization(self.config.ts_file, is_or_fs, run_type)
-        self.run_lasp()
+        self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
             print("[LASP] TSmin Extrapolation Optimization failed. Check the lasp.out for details.")
             return False
         self.prepare_optimization(run_type)
-        self.run_lasp()
+        self.run_lasp(self.config.waiting_time)
         if not self.runner.check_result():
             print("[LASP] TSmin Extrapolation Optimization failed. Check the lasp.out for details.")
             return False

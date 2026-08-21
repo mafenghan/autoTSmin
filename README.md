@@ -90,6 +90,7 @@ config = AutoTSminConfig(
     bond_strength=10.0,
     fs_search_ssw_steps=5,
     ts_search_ssw_steps=5,
+    waiting_time = 30,
     max_cycles=100,
     gpu_slurm=Path("gpu.slurm"),
 )

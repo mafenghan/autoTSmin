@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from os import wait
 from pathlib import Path
 
 @dataclass
@@ -13,6 +14,7 @@ class AutoTSminConfig:
     bond_strength: float = 10.0
     fs_search_ssw_steps: int = 5
     ts_search_ssw_steps: int = 5
+    waiting_time: int = 10
     max_cycles: int = 10
     lasp_input: Path = Path("lasp.in")
     all_arc: Path = Path("all.arc")
