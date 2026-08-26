@@ -1,5 +1,4 @@
 from pathlib import Path
-from importlib_metadata import files
 import pandas as pd
 import re
 from .geometry import distance_matrix_pbc, abc2latt

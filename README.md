@@ -57,7 +57,7 @@ TS final structure
 
 ## Requirements
 
-- Python >= 3.10
+- Python >= 3.8
 - LASP(need lasp.in, NN potential, and gpu.slurm)
 - NumPy
 - Pandas

@@ -28,7 +28,7 @@ def abc2latt(abc):
     abc_latt[2,0] = c*cos(bet*pi/180.0)
     abc_latt[2,1] = (b*c*cos(alf*pi/180.0)-abc_latt[1,0]*abc_latt[2,0])/abc_latt[1,1]
     abc_latt[2,2] = sqrt(c**2-abc_latt[2,0]**2-abc_latt[2,1]**2)
-    return np.mat(abc_latt)
+    return np.asmatrix(abc_latt)
 
 def dir2car(lattice,atomdir):
     atomcar = np.zeros((atomdir.shape[0],3))

@@ -121,9 +121,16 @@ class AutoTSmin:
         if not self.runner.check_result():
             print("[LASP] TS Structure SSW search failed. Check the lasp.out for details.")
             return False
+        print('\nTS SSW finished!')
         best_structure = get_lowest_energy_structure(self.config.all_arc)
         write_arc(best_structure.arc, best_structure.abc, self.config.ts_file, sort=False)
-        return True
+        is_status = self.run_ts_extrapolation("is", run_type=run_type)
+        fs_status = self.run_ts_extrapolation("fs", run_type=run_type)
+        if not is_status or not fs_status:                
+            print("\nTSmin extrapolation optimization failed. Restarting search...")
+            return False
+        print("\nTSmin extrapolation optimization success!")
+        return self.check_final_structure(self.config.is_file, self.config.fs_file)
 
     def run_ts_extrapolation(self, is_or_fs: str, run_type: int = 5):
         print(f"\n========== Run TS extrapolation to {is_or_fs} ==========")
@@ -150,12 +157,14 @@ class AutoTSmin:
         for cycle in range(1, self.config.max_cycles + 1):
             self.cycle = cycle
             print(f"\n========== Cycle {self.cycle} ==========")
+
             # FS search
             fs_status = self.run_find_fs(run_type=run_type)
             if not fs_status:
                 print("\nNo FS structure found. Restarting search...")
                 continue
             print("\nFS structure found!")
+
             # TS search
             ts_status = self.run_desw()
             if ts_status == 'desw success':
@@ -166,30 +175,20 @@ class AutoTSmin:
                 continue
             elif ts_status == 'string success':
                 print(f'\nString success. Next optimize TS guess.')
-            # TSmin
-            ts_status = self.run_tsmin(run_type=run_type)
-            if not ts_status:
-                print("\nNo TSmin structure found. Restarting search...")
-                continue
-            print("\nTSmin Finished!")
-            # TSmin 外推优化产生IS结构和FS结构
-            is_status = self.run_ts_extrapolation("is", run_type=run_type)
-            fs_status = self.run_ts_extrapolation("fs", run_type=run_type)
-            if not is_status or not fs_status:                
-                print("\nTSmin extrapolation optimization failed. Restarting search...")
-                continue
-            print("\nTSmin extrapolation optimization success!")
-            # check bonding relation
-            check_status = self.check_final_structure(self.config.is_file, self.config.fs_file)
-            if not check_status:
-                print("\nNo new bonding relation found. Restarting search...")
-                continue
-            print("\nNew bonding relation found!")
-            ts_status = self.run_desw()
-            if ts_status != 'desw success':
-                print("\nDESW failed. Restarting search...")
-                continue
-            print(f"\nDESW success! Please check the IS/TS/FS structure in {self.config.is_file}/{self.config.ts_file}/{self.config.fs_file}.")
-            return True
+
+                # TSmin
+                ts_status = self.run_tsmin(run_type=run_type)
+                if not ts_status:
+                    print("\nTSmin and extrapolation optimization failed. No new bonding relation found. Restarting search...")
+                    continue
+                print("\nTSmin Finished, find new IS.arc and FS.arc!")
+
+                # TS search
+                ts_status = self.run_desw()
+                if ts_status != 'desw success':
+                    print("\nDESW failed. Restarting search...")
+                    continue
+                print(f"\nDESW success! Please check the IS/TS/FS structure in {self.config.is_file}/{self.config.ts_file}/{self.config.fs_file}.")
+                return True
         print("\nMaximum cycles reached.")
         return False
